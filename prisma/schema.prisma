@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions      = [pgcrypto]
+}
+
+model chapter {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String     @db.VarChar(100)
+  number      Int
+  page_start  Int
+  page_end    Int
+  textbook_id String     @db.Uuid
+  created_at  DateTime   @default(now()) @db.Timestamp(6)
+  updated_at  DateTime   @default(now()) @db.Timestamp(6)
+  textbook    textbook   @relation(fields: [textbook_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  question    question[]
+}
+
+model provider {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String?    @db.VarChar(255)
+  name        String     @db.VarChar(255)
+  created_at  DateTime   @default(now()) @db.Timestamp(6)
+  updated_at  DateTime   @default(now()) @db.Timestamp(6)
+  user_id     String     @db.Uuid
+  tenant_id   String     @db.VarChar(255)
+  user        user       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  textbook    textbook[]
+}
+
+model question {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content          String
+  chapter_id       String   @db.Uuid
+  difficulty_level Int
+  question_type    String   @db.VarChar(50)
+  answer           String
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+  updated_at       DateTime @default(now()) @db.Timestamp(6)
+  chapter          chapter  @relation(fields: [chapter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model study_session {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  start_time  DateTime @db.Timestamp(6)
+  end_time    DateTime @db.Timestamp(6)
+  user_id     String   @db.Uuid
+  textbook_id String   @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at  DateTime @default(now()) @db.Timestamp(6)
+  textbook    textbook @relation(fields: [textbook_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user        user     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model textbook {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String          @db.VarChar(100)
+  subject          String          @db.VarChar(50)
+  grade_level      Int
+  publication_year DateTime        @db.Timestamp(6)
+  publisher        String          @db.VarChar(100)
+  provider_id      String          @db.Uuid
+  created_at       DateTime        @default(now()) @db.Timestamp(6)
+  updated_at       DateTime        @default(now()) @db.Timestamp(6)
+  chapter          chapter[]
+  study_session    study_session[]
+  provider         provider        @relation(fields: [provider_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String          @unique @db.VarChar(255)
+  firstName     String?         @db.VarChar(255)
+  lastName      String?         @db.VarChar(255)
+  roq_user_id   String          @db.VarChar(255)
+  tenant_id     String          @db.VarChar(255)
+  created_at    DateTime        @default(now()) @db.Timestamp(6)
+  updated_at    DateTime        @default(now()) @db.Timestamp(6)
+  provider      provider[]
+  study_session study_session[]
+}
